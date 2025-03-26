@@ -24,7 +24,7 @@ def fetch_bookings_to_notify():
     """Fetches bookings that need a Telegram notification."""
     headers = {"Authorization": f"Bearer {AIRTABLE_API_KEY}"}
     params = {
-        "filterByFormula": 'AND({Send notification to instructor} = 1, {Course status} = "Scheduled", {Instructor Telegram ID} != "")'
+        "filterByFormula": 'AND({Send notification Telegram to instructor} = 1, {Course status} = "Scheduled", {Instructor Telegram ID} != "")'
     }
     response = requests.get(
         f"https://api.airtable.com/v0/{BASE_ID}/{TABLE_NAME}",
@@ -37,6 +37,7 @@ def fetch_bookings_to_notify():
     else:
         logger.error(f"❌ Failed to fetch bookings: {response.json()}")
         return []
+
 
 
 
