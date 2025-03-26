@@ -41,17 +41,39 @@ def fetch_bookings_to_notify():
 
 
 
-def send_telegram_message(chat_id, message):
-    """Sends a Telegram message to the instructor."""
-    data = {"chat_id": chat_id, "text": message, "parse_mode": "Markdown"}
-    response = requests.post(TELEGRAM_API_URL, json=data)
+def send_telegram_message(telegram_id, course_name, booking_date):
+    """Sends a Telegram notification to the instructor."""
+    try:
+        # Validate inputs
+        if not telegram_id:
+            logger.error("❌ Telegram ID is missing, cannot send notification.")
+            return False
 
-    if response.status_code == 200:
-        logger.info(f"📨 Message sent to {chat_id}")
-        return True
-    else:
-        logger.error(f"❌ Failed to send message: {response.json()}")
+        # Set default values if missing
+        course_name = course_name or "Unknown Course"
+        booking_date = booking_date or "Unknown Date"
+
+        # Message format
+        message_text = f"📢 You have a new course booking!\n\n📝 Course: {course_name}\n📅 Date: {booking_date}"
+
+        # Send message
+        response = requests.post(
+            f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage",
+            json={"chat_id": telegram_id, "text": message_text}
+        )
+
+        response_data = response.json()
+        if response_data.get("ok"):
+            logger.info(f"✅ Telegram message sent to {telegram_id}")
+            return True
+        else:
+            logger.error(f"❌ Failed to send message: {response_data}")
+            return False
+
+    except Exception as e:
+        logger.error(f"🚨 Exception while sending Telegram message: {e}")
         return False
+
 
 
 def process_notifications():
