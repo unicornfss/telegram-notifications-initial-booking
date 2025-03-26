@@ -15,8 +15,6 @@ TABLE_NAME = "Bookings"
 
 # Airtable API URL
 AIRTABLE_URL = f"https://api.airtable.com/v0/{BASE_ID}/{TABLE_NAME}"
-
-# Telegram API URL
 TELEGRAM_API_URL = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
 
 
@@ -40,14 +38,7 @@ def fetch_bookings_to_notify():
 
 def send_telegram_message(telegram_id, message):
     """Sends a Telegram message to the given Telegram ID."""
-    # Debug: Print Telegram ID before sending
     logger.info(f"📢 Sending Telegram message to ID: {telegram_id}")
-
-    # Ensure ID is a clean string (extract from list if necessary)
-    if isinstance(telegram_id, list):
-        telegram_id = telegram_id[0]  # Get first item if it's a list
-
-    telegram_id = str(telegram_id).strip()  # Ensure it's a string
 
     payload = {"chat_id": telegram_id, "text": message}
     response = requests.post(TELEGRAM_API_URL, json=payload)
@@ -94,7 +85,9 @@ def process_notifications():
         record_id = record["id"]
 
         # Extract details safely
-        telegram_id = fields.get("Instructor Telegram ID", "").strip()
+        telegram_id_list = fields.get("Instructor Telegram ID", [])
+        telegram_id = telegram_id_list[0] if isinstance(telegram_id_list, list) and telegram_id_list else ""
+
         course_name = fields.get("Course (text)", "Unknown Course")
         booking_date = fields.get("Matrix date", "Unknown Date")
         location = fields.get("Location", "Unknown Location")
@@ -102,6 +95,10 @@ def process_notifications():
 
         # Debug: Print all extracted values
         logger.info(f"📋 Extracted Data - ID: {telegram_id}, Course: {course_name}, Date: {booking_date}, Location: {location}, Business: {business}")
+
+        if not telegram_id:
+            logger.error(f"⚠️ Skipping notification for {course_name} - No valid Telegram ID found.")
+            continue
 
         # Construct message
         message = (
