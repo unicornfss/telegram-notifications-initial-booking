@@ -76,6 +76,7 @@ def send_telegram_message(telegram_id, course_name, booking_date):
 
 
 
+
 def process_notifications():
     """Processes notifications and sends Telegram messages."""
     bookings = fetch_bookings_to_notify()
@@ -115,7 +116,7 @@ def process_notifications():
 🌍 [View Location on Google Maps]({google_maps_url})""" if google_maps_url else ""
 
         # Send the message
-        if send_telegram_message(instructor_telegram_id, message):
+        if send_telegram_message(instructor_telegram_id, course_name, booking_date):
             # Mark notification as sent in Airtable
             update_url = f"{AIRTABLE_URL}/{booking['id']}"
             update_data = {"fields": {"Send notification to instructor": False}}
