@@ -24,6 +24,19 @@ def notify_instructor():
         data = request.json
         logger.info(f"📦 Incoming data from Airtable: {data}")
 
+         # Log each field individually
+        logger.info(f"📌 Raw Fields:\n"
+                    f"record_id: {data.get('record_id')}\n"
+                    f"course: {data.get('course')}\n"
+                    f"date: {data.get('date')}\n"
+                    f"instructor: {data.get('instructor')}\n"
+                    f"telegram_id: {data.get('telegram_id')}\n"
+                    f"business: {data.get('business')}\n"
+                    f"location: {data.get('location')}\n"
+                    f"full_address: {data.get('full_address')}\n"
+                    f"map_link: {data.get('map_link')}\n"
+                    f"instructor_fee: {data.get('instructor_fee')}")
+
         # Extract fields from Airtable webhook
         record_id = data.get("record_id")
         course = data.get("course", "Unknown course")
