@@ -55,8 +55,7 @@ def notify_instructor():
         map_link = data.get("map_link", [""])
         map_link = map_link[0] if isinstance(map_link, list) and map_link else ""
 
-        instructor_fee = data.get("instructor_fee", [0])
-        instructor_fee = instructor_fee[0] if isinstance(instructor_fee, list) and instructor_fee else 0
+        instructor_fee = data.get("instructor_fee", 0)
 
         # Create clickable address if map link exists
         location_display = f"<a href=\"{map_link}\">{full_address}</a>" if map_link else full_address
