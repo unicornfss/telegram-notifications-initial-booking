@@ -24,7 +24,7 @@ def notify_instructor():
         data = request.get_json()
         logger.info(f"📦 Incoming data from Airtable: {data}")
 
-        telegram_id = str(data.get("telegram_id", "")).strip()
+        telegram_id = str(data.get("telegram_id", [""])[0]).strip()
         instructor_name = data.get("instructor", ["Instructor"])[0]
         first_name = instructor_name.split()[0] if instructor_name else "Instructor"
         course = data.get("course", "Unknown course")
