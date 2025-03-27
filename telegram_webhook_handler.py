@@ -1,78 +1,88 @@
 import os
-import logging
 from flask import Flask, request, jsonify
 import requests
+import logging
 
-# Set up logging
+# Logging setup
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Load Telegram bot token from environment
+# Load environment variables
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 TELEGRAM_API_URL = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
 
-# Flask app
+# Flask app setup
 app = Flask(__name__)
 
-@app.route('/')
+@app.route("/")
 def home():
-    return "Telegram Webhook is running!"
+    return "Telegram webhook is running!"
 
-@app.route('/notify', methods=['POST'])
+@app.route("/notify", methods=["POST"])
 def notify_instructor():
     try:
-        data = request.get_json()
+        data = request.json
         logger.info(f"📦 Incoming data from Airtable: {data}")
 
-        telegram_id = str(data.get("telegram_id", [""])[0]).strip()
-        instructor_name = data.get("instructor", ["Instructor"])[0]
-        first_name = instructor_name.split()[0] if instructor_name else "Instructor"
+        # Extract fields from Airtable webhook
+        record_id = data.get("record_id")
         course = data.get("course", "Unknown course")
         date = data.get("date", "Unknown date")
+        instructor = data.get("instructor", ["Instructor"])[0]
+        first_name = instructor.split()[0] if instructor else "Instructor"
+
+        telegram_id = data.get("telegram_id", [""])[0]
         business = data.get("business", ["Unknown business"])[0]
-        fee = data.get("fee", "£0")
-        address = data.get("address", "")
-        map_url = data.get("map_url", "")
+        location_name = data.get("location", [""])[0]
 
-        # Construct location line
-        if address and map_url:
-            location_line = f"📍 Location: [{address}]({map_url})"
-        elif address:
-            location_line = f"📍 Location: {address}"
-        else:
-            location_line = "📍 Location: Not provided"
+        # New: Lookup fields for address and fee
+        full_address = data.get("full_address", [""])
+        full_address = full_address[0] if isinstance(full_address, list) and full_address else "Not provided"
 
+        map_link = data.get("map_link", [""])
+        map_link = map_link[0] if isinstance(map_link, list) and map_link else ""
+
+        instructor_fee = data.get("instructor_fee", [0])
+        instructor_fee = instructor_fee[0] if isinstance(instructor_fee, list) and instructor_fee else 0
+
+        # Create clickable address if map link exists
+        location_display = f"<a href=\"{map_link}\">{full_address}</a>" if map_link else full_address
+
+        # Compose message
         message = (
-            f"👋 Hello {first_name},\n\n"
-            f"📅 You have been assigned a course:\n"
-            f"🧾 *{course}*\n"
-            f"📆 *{date}*\n"
-            f"🏢 Business: *{business}*\n"
-            f"{location_line}\n"
-            f"💷 Instructor Fee: *{fee}*\n\n"
-            f"ℹ️ Any questions or comments, please contact the office.\n"
-            f"📚 Full details of all courses assigned to you can be [found in the database](https://bit.ly/4l7cljw)."
+            f"👋 Hello <b>{first_name}</b>, you’ve been assigned a course:\n\n"
+            f"📚 <b>Course:</b> {course}\n"
+            f"📅 <b>Date:</b> {date}\n"
+            f"🏢 <b>Business:</b> {business}\n"
+            f"📍 <b>Location:</b> {location_display}\n"
+            f"💷 <b>Instructor Fee:</b> £{instructor_fee}\n\n"
+            f"💬 Any questions or comments, please contact the office.\n"
+            f"📂 Full details of all courses assigned to you can be <a href=\"https://bit.ly/4l7cljw\" disable_web_page_preview=\"true\">found in the database</a>."
         )
 
         # Send Telegram message
-        response = requests.post(TELEGRAM_API_URL, json={
+        payload = {
             "chat_id": telegram_id,
             "text": message,
-            "parse_mode": "Markdown",
+            "parse_mode": "HTML",
             "disable_web_page_preview": True
-        })
+        }
 
-        if response.status_code == 200:
+        response = requests.post(TELEGRAM_API_URL, json=payload)
+        response_data = response.json()
+
+        if response.status_code == 200 and response_data.get("ok"):
             logger.info(f"✅ Message sent successfully to {telegram_id}")
             return jsonify({"status": "success"}), 200
         else:
-            logger.error(f"❌ Failed to send message: {response.json()}")
-            return jsonify({"status": "failed", "error": response.json()}), 400
+            logger.error(f"❌ Failed to send message: {response_data}")
+            return jsonify({"status": "error", "message": response_data}), 400
 
     except Exception as e:
-        logger.exception("🚨 Error in /notify handler")
+        logger.exception("❌ Exception occurred during notification")
         return jsonify({"status": "error", "message": str(e)}), 500
 
-
+# Only run if executed directly
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=10000)
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
