@@ -23,24 +23,14 @@ app = Flask(__name__)
 def home():
     return "Telegram webhook is running!"
 
+# ---------------------------
+# 📌 Airtable → Notify Instructor
+# ---------------------------
 @app.route("/notify", methods=["POST"])
 def notify_instructor():
     try:
         data = request.json
         logger.info(f"📦 Incoming data from Airtable: {data}")
-
-        # Log raw values
-        logger.info(f"📌 Raw Fields:\n"
-                    f"record_id: {data.get('record_id')}\n"
-                    f"course: {data.get('course')}\n"
-                    f"date: {data.get('date')}\n"
-                    f"instructor: {data.get('instructor')}\n"
-                    f"telegram_id: {data.get('telegram_id')}\n"
-                    f"business: {data.get('business')}\n"
-                    f"location: {data.get('location')}\n"
-                    f"full_address: {data.get('full_address')}\n"
-                    f"map_link: {data.get('map_link')}\n"
-                    f"instructor_fee: {data.get('instructor_fee')}")
 
         # Extract fields
         record_id = data.get("record_id")
@@ -119,6 +109,36 @@ def notify_instructor():
     except Exception as e:
         logger.exception("❌ Exception occurred during notification")
         return jsonify({"status": "error", "message": str(e)}), 500
+
+# ---------------------------
+# 📌 Telegram → Handle Commands
+# ---------------------------
+@app.route("/webhook", methods=["POST"])
+def telegram_webhook():
+    update = request.json
+    logger.info(f"📥 Incoming Telegram update: {update}")
+
+    if "message" in update:
+        chat_id = update["message"]["chat"]["id"]
+        text = update["message"].get("text", "")
+
+        if text.strip().lower() == "/help":
+            help_text = (
+                "🤖 <b>Available commands:</b>\n\n"
+                "/help – Show this help message\n"
+                "/start – Start interacting with the bot\n"
+                "/status – Get your current course assignments\n"
+                "/contact – Contact the office"
+            )
+
+            payload = {
+                "chat_id": chat_id,
+                "text": help_text,
+                "parse_mode": "HTML"
+            }
+            requests.post(TELEGRAM_API_URL, json=payload)
+
+    return jsonify({"status": "ok"}), 200
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
