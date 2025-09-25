@@ -63,7 +63,7 @@ def notify_instructor():
 
         # Compose Telegram message
         message = (
-            f"👋 Hello <b>{first_name}</b>, you’ve been assigned a course:\n\n"
+            f"👋 Hello <b>{first_name}</b>, you’ve been assigned a course (or the details of a course have changed):\n\n"
             f"📚 <b>Course:</b> {course}\n"
             f"📅 <b>Date:</b> {date}\n"
             f"🏢 <b>Business:</b> {business}\n"
